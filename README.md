@@ -1,4 +1,3 @@
-```markdown
 # NetShield — Network Intrusion Detection System
 
 > **Hierarchical Machine Learning Pipeline** for real-time network intrusion screening, threat severity scoring, and unsupervised behavior analysis built on the UNSW-NB15 dataset.
@@ -41,9 +40,6 @@
                  [ Categorized Threat Vector ]
               (Generic, Exploits, DoS, Fuzzers, etc.)
 
-```
-
----
 
 ## Stack & Technologies
 
