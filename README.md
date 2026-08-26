@@ -8,10 +8,10 @@
 
 ## Key Features
 
-* **Tier 1 Binary Screening:** High-speed binary classifier filtering incoming network flows as *Normal* or *Attack*.
-* **Tier 2 Multiclass Classification:** Automated threat taxonomy identifying specific attack vectors (Exploits, DoS, Fuzzers, Generic, etc.).
-* **Dynamic Severity Engine:** 0–100 risk scoring algorithm generating instant alert levels (*Medium*, *High*, *Critical*).
-* **Unsupervised Anomaly Discovery:** 2D PCA and K-Means clustering pipeline exposing latent traffic behavior without ground-truth labels.
+- **Tier 1 Binary Screening:** High-speed binary classifier filtering incoming network flows as *Normal* or *Attack*.
+- **Tier 2 Multiclass Classification:** Automated threat taxonomy identifying specific attack vectors (Exploits, DoS, Fuzzers, Generic, etc.).
+- **Dynamic Severity Engine:** 0–100 risk scoring algorithm generating instant alert levels (*Medium*, *High*, *Critical*).
+- **Unsupervised Anomaly Discovery:** 2D PCA and K-Means clustering pipeline exposing latent traffic behavior without ground-truth labels.
 
 ---
 
@@ -39,16 +39,18 @@
                                 ▼
                  [ Categorized Threat Vector ]
               (Generic, Exploits, DoS, Fuzzers, etc.)
+```
 
+---
 
 ## Stack & Technologies
 
-| Layer | Tools & Libraries |
-| --- | --- |
-| **Core Runtime** | Python 3.10+, NumPy, Pandas, PyArrow, Joblib |
-| **Machine Learning** | Scikit-Learn, XGBoost |
-| **Dashboard & UI** | Streamlit |
-| **Visualization** | Matplotlib, Seaborn |
+| Layer                | Tools & Libraries                            |
+| -------------------- | -------------------------------------------- |
+| **Core Runtime**     | Python 3.10+, NumPy, Pandas, PyArrow, Joblib |
+| **Machine Learning** | Scikit-Learn, XGBoost                        |
+| **Dashboard & UI**   | Streamlit                                    |
+| **Visualization**    | Matplotlib, Seaborn                          |
 
 ---
 
@@ -84,7 +86,6 @@ NetShield-IDS/
 ├── run_phase7.py                   # End-to-End Evaluation Pipeline
 ├── requirements.txt
 └── README.md
-
 ```
 
 ---
@@ -95,17 +96,17 @@ NetShield-IDS/
 
 ```bash
 # Clone repository
-git clone [https://github.com/rxetal/NetShield-IDS.git](https://github.com/rxetal/NetShield-IDS.git)
+git clone https://github.com/rxetal/NetShield-IDS.git
 cd NetShield-IDS
 
 # Install dependencies
 pip install -r requirements.txt
-
 ```
 
 ### 2. Dataset Configuration
 
 Place the cleaned UNSW-NB15 dataset file inside the processed data directory:
+
 `data/processed/cleaned_unsw_nb15.parquet`
 
 > *Note: Dataset files are excluded from Git tracking due to size constraints.*
@@ -123,7 +124,6 @@ python run_phase7.py
 
 # Launch web dashboard
 streamlit run app/main.py
-
 ```
 
 ---
@@ -133,5 +133,4 @@ streamlit run app/main.py
 The primary goal of NetShield is to build an end-to-end, leak-free machine learning system capable of real-time network intrusion detection, risk assessment, and traffic analysis. The project demonstrates a complete machine learning engineering lifecycle—from data preprocessing and baseline model benchmarking to multi-tier hierarchical classification, unsupervised clustering, and an interactive deployment dashboard.
 
 ```
-
 ```
