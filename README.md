@@ -1,26 +1,28 @@
 ```markdown
-# NetShield AI — Hierarchical Intrusion Detection System
+# 🛡️ NetShield AI — Two-Tier Network Intrusion Detection System
 
-Machine Learning model and interactive web application for detecting network intrusions, classifying threat severity, and analyzing traffic behavior using real-world network data.
+A machine learning-based Network Intrusion Detection System (IDS) designed to detect malicious network traffic, classify detected attacks into specific threat categories, and provide an additional unsupervised view of network behavior.
 
 🎓 **National Telecommunications Institute (NTI)** — Capstone Project 2026
 
 ---
 
-## Project Overview
+## 📌 Project Overview
 
-NetShield AI addresses malicious network activity using a **Hierarchical AI Pipeline** built on the **UNSW-NB15 dataset**. Instead of a single model, the system routes traffic through a two-tier classification architecture and an unsupervised analysis engine:
+Network attacks are becoming increasingly diverse and difficult to detect using traditional rule-based security systems.
 
-* **Tier 1 (Binary):** Instantly screens network flows as Normal or Attack traffic (**99.25% Accuracy**).
-* **Tier 2 (Multiclass):** Categorizes detected threats into 9 specific attack vectors (**81.04% F1-Score**).
-* **Risk Score Engine:** Calculates dynamic severity levels (Medium, High, Critical) based on classification confidence.
-* **Unsupervised Clustering:** Uses PCA (2-Component) and K-Means to discover behavioral patterns in unlabelled traffic.
+**NetShield AI** addresses this problem using a **Hierarchical AI Pipeline** built on the **UNSW-NB15 dataset**. Instead of passing every network flow through a single complex multiclass model, the system follows a structured multi-tiered approach:
 
-The project demonstrates a complete machine learning workflow, including exploratory data analysis, strict data leakage prevention, model benchmarking, hierarchical inference, and interactive dashboard deployment.
+* **Tier 1 (Binary Detection):** Instantly screens incoming traffic as Normal or Attack.
+* **Tier 2 (Multiclass Classification):** Categorizes detected threats into specific attack categories.
+* **Risk Score Engine:** Calculates an instant threat severity rating paired with alert levels (Medium, High, Critical).
+* **Unsupervised Clustering:** Employs PCA and K-Means to discover latent traffic behavior and anomalies in 2D space.
 
 ---
 
-## System Architecture
+## 🧠 System Architecture
+
+NetShield follows a hierarchical machine learning architecture:
 
 ```text
                   [ Incoming Network Traffic Flow ]
@@ -38,7 +40,7 @@ The project demonstrates a complete machine learning workflow, including explora
                                                   ▼
                                    ┌──────────────────────────────┐
                                    │  Tier 2: Multiclass Model    │
-                                   │   (9 Attack Categorizations) │
+                                   │   (Attack Categorization)    │
                                    └──────────────┬───────────────┘
                                                   │
                                                   ▼
@@ -47,27 +49,39 @@ The project demonstrates a complete machine learning workflow, including explora
 
 ```
 
+### Tier 1 — Binary Classification
+
+The first model determines whether a network flow is **Normal** or an **Attack**. Tier 1 uses an XGBoost binary classifier for high-speed initial screening.
+
+### Tier 2 — Multiclass Attack Classification
+
+If Tier 1 identifies traffic as malicious, the sample is passed to Tier 2. Tier 2 uses XGBoost multiclass classification to isolate the specific attack vector.
+
+### Unsupervised Behavior Analysis
+
+Runs alongside the supervised models using **PCA** and **K-Means** to group network flows by feature-space behavior without needing explicit attack labels.
+
 ---
 
-## System Performance & Metrics
+## 📊 System Performance & Metrics
 
-| Evaluation Phase | Target Objective | Accuracy / Performance |
+| Evaluation Phase | Target Objective | Metric / Performance |
 | --- | --- | --- |
-| **Tier 1 Model** | Binary Traffic Screening (Normal vs Attack) | **99.25%** |
-| **Tier 2 Model** | 9-Class Threat Categorization | **81.04%** |
-| **End-to-End Pipeline** | Full Hierarchical Evaluation | **97.89%** |
+| **Tier 1 Model** | Binary Traffic Screening (Normal vs Attack) | *Check `results/metrics/tier1_report.txt*` |
+| **Tier 2 Model** | Multiclass Threat Categorization | *Check `results/metrics/tier2_report.txt*` |
+| **End-to-End Pipeline** | Full Hierarchical Evaluation | *Check `results/metrics/end_to_end_report.txt*` |
 
 ---
 
-## Application Demo
+## 🖥️ Application Demo & Features
 
-An interactive dashboard for NetShield was developed using Streamlit to allow real-time network flow inspection, risk scoring, model benchmarking, and cluster analysis.
+An interactive multi-page dashboard for NetShield was developed using Streamlit to allow real-time network flow inspection, risk scoring, model benchmarking, and cluster analysis.
 
 * **Page 1 — 📊 System Dashboard & Metrics:** High-level statistical KPI cards and interactive confusion matrices.
 * **Page 2 — 🔍 Interactive Traffic Inspector:** Live inspection of UNSW-NB15 flows with risk scores (0–100), alert banners, and 49-feature telemetry breakdowns.
 * **Page 3 — 🔬 Model Selection & Unsupervised Analysis:** Benchmarks comparing XGBoost against Random Forest, Decision Trees, Logistic Regression, and SVM, alongside 2D PCA threat clustering.
 
-You can run the web app locally using:
+You can launch the web app locally using:
 
 ```bash
 streamlit run app/main.py
@@ -76,16 +90,16 @@ streamlit run app/main.py
 
 ---
 
-## Dataset
+## 📊 Dataset
 
 The **UNSW-NB15 dataset** is used for training and evaluating the models.
 
-Due to file size constraints, the dataset is not included directly in this repository. To run the pipeline, obtain the processed dataset and place it in the following path:
+Due to file size constraints, the dataset is not included directly in this repository. To run the pipeline, place the processed dataset in:
 `data/processed/cleaned_unsw_nb15.parquet`
 
 ---
 
-## Project Workflow
+## ⚙️ Project Workflow
 
 ### 1. Exploratory Data Analysis & Leakage Prevention
 
@@ -97,7 +111,7 @@ Categorical features were transformed using `OrdinalEncoder` configured to handl
 
 ### 3. Model Development & Benchmarking
 
-Multiple machine learning algorithms (Logistic Regression, Decision Trees, Random Forests, SVM, and XGBoost) were benchmarked. **XGBoost** was selected as the top performer for both Tier 1 and Tier 2 models.
+Multiple machine learning algorithms (Logistic Regression, Decision Trees, Random Forests, and XGBoost) were benchmarked. **XGBoost** was selected as the top performer for both Tier 1 and Tier 2 models.
 
 ### 4. Unsupervised Behavior Analysis
 
@@ -105,15 +119,15 @@ A combined **PCA + K-Means** pipeline reduces high-dimensional flow attributes t
 
 ---
 
-## Technologies and Libraries
+## 🛠️ Technologies & Libraries
 
-* **Core & Processing:** Python, pandas, numpy, joblib
-* **Machine Learning:** scikit-learn, xgboost
-* **Visualization & Interface:** streamlit, matplotlib, seaborn
+* **Core & Data:** Python, Pandas, NumPy, Joblib, PyArrow
+* **Machine Learning:** Scikit-learn, XGBoost
+* **Visualization & Web App:** Streamlit, Matplotlib, Seaborn
 
 ---
 
-## Repository Structure
+## 📁 Repository Structure
 
 ```text
 NetShield-IDS/
@@ -122,7 +136,8 @@ NetShield-IDS/
 ├── data/                           # Processed UNSW-NB15 Parquet Data (not tracked)
 ├── models/                         # Trained Artifacts (.joblib Models & Encoders)
 ├── results/
-│   └── figures/                    # Confusion Matrices, Benchmarks & Cluster Plots
+│   ├── figures/                    # Confusion Matrices, Benchmarks & Cluster Plots
+│   └── metrics/                    # Text & CSV Evaluation Reports
 ├── src/
 │   ├── __init__.py
 │   ├── data_loader.py              # Data Ingestion & Memory Optimization
@@ -132,6 +147,7 @@ NetShield-IDS/
 ├── train.py                        # Unified Model Training Script
 ├── run_model_selection.py          # Baseline Model Benchmarking
 ├── run_unsupervised.py             # PCA + K-Means Clustering Script
+├── run_phase7.py                   # End-to-End Evaluation Script
 ├── requirements.txt
 └── README.md
 
@@ -139,7 +155,7 @@ NetShield-IDS/
 
 ---
 
-## How to Run
+## 🚀 How to Run
 
 1. **Clone this repository:**
 ```bash
@@ -169,7 +185,10 @@ python run_model_selection.py
 # Step 3: Run PCA & K-Means unsupervised threat clustering
 python run_unsupervised.py
 
-# Step 4: Launch the interactive Streamlit Web App
+# Step 4: Run batch end-to-end evaluation
+python run_phase7.py
+
+# Step 5: Launch the interactive Streamlit Web App
 streamlit run app/main.py
 
 ```
@@ -178,7 +197,7 @@ streamlit run app/main.py
 
 ---
 
-## Project Goal
+## 🎯 Project Goal
 
 The goal of this project is to build an end-to-end, leak-free machine learning system capable of real-time network intrusion detection, risk assessment, and traffic analysis. The project demonstrates a complete machine learning lifecycle including benchmarking, hierarchical classification, unsupervised clustering, and interactive deployment.
 
