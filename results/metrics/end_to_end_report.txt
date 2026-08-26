@@ -1,18 +1,36 @@
-End-to-End Pipeline Overall Accuracy: 98.33%
+TIER 1 END-TO-END RESULTS
+=========================
+Accuracy: 99.22%
+
+              precision    recall  f1-score   support
+
+      Normal       1.00      1.00      1.00    391631
+      Attack       0.93      0.91      0.92     19879
+
+    accuracy                           0.99    411510
+   macro avg       0.96      0.95      0.96    411510
+weighted avg       0.99      0.99      0.99    411510
+
+
+==================================================
+
+FULL TWO-TIER END-TO-END RESULTS
+================================
+Accuracy: 98.32%
 
                 precision    recall  f1-score   support
 
-      Analysis       0.20      0.03      0.05       481
-      Backdoor       0.15      0.24      0.18       361
-           DoS       0.57      0.18      0.27      1148
-      Exploits       0.79      0.85      0.82      5469
-       Fuzzers       0.50      0.57      0.53      4335
-       Generic       0.97      0.89      0.93      5062
+      Analysis       0.10      0.04      0.06       437
+      Backdoor       0.27      0.18      0.22       397
+           DoS       0.39      0.21      0.27      1133
+      Exploits       0.80      0.85      0.82      5520
+       Fuzzers       0.48      0.56      0.52      4328
+       Generic       0.97      0.89      0.93      5057
         Normal       1.00      1.00      1.00    391631
-Reconnaissance       0.88      0.79      0.83      2701
-     Shellcode       0.56      0.67      0.61       290
-         Worms       0.62      0.50      0.55        32
+Reconnaissance       0.90      0.80      0.85      2671
+     Shellcode       0.61      0.71      0.65       302
+         Worms       0.61      0.50      0.55        34
 
       accuracy                           0.98    411510
-     macro avg       0.62      0.57      0.58    411510
+     macro avg       0.61      0.57      0.59    411510
   weighted avg       0.98      0.98      0.98    411510

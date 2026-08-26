@@ -35,6 +35,7 @@ def plot_class_distributions(df, output_dir="results/figures"):
     plt.title('Tier 2: Attack Categories Distribution (Attack Traffic Only)', fontsize=12, fontweight='bold')
     plt.xlabel('Total Packets', fontsize=10)
     plt.ylabel('Attack Category', fontsize=10)
+
     
     for p in ax2.patches:
         ax2.annotate(f'{int(p.get_width()):,}', (p.get_width() + 5000, p.get_y() + p.get_height() / 2.),

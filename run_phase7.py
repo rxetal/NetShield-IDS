@@ -1,50 +1,79 @@
 import os
 import pandas as pd
-import numpy as np
-import joblib
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.metrics import accuracy_score, classification_report
 from src.pipeline import NetShieldPipeline
 
 print("==================================================")
-print("     RUNNING PHASE 7: END-TO-END PIPELINE EVAL    ")
+print("     EVALUATING END-TO-END NETSHIELD PIPELINE     ")
 print("==================================================")
 
-# 1. تحميل Held-out Test Set المحدد سابقاً في Master Split
 test_path = "data/processed/test_set.parquet"
+
 if not os.path.exists(test_path):
-    raise FileNotFoundError("🚨 test_set.parquet not found. Please run train.py first!")
+    raise FileNotFoundError("🚨 Test set missing! Please run train.py first.")
 
-print(f"[INFO] Loading Held-out Test Set: {test_path}")
 test_df = pd.read_parquet(test_path)
-
-# 2. تحميل الـ Pipeline الشامل
 pipeline = NetShieldPipeline()
 
-# 3. إحداث التوقعات على Held-Out Test Data
-print("[INFO] Evaluating End-to-End Pipeline...")
-final_preds, t1_preds, t1_probas = pipeline.predict(test_df)
+print(f"[EVALUATION] Running FAST batch evaluation on {len(test_df):,} test samples...")
 
-# إعداد القيم الحقيقية (Ground Truth)
-y_true = []
-for _, row in test_df.iterrows():
-    if row['label'] == 0:
-        y_true.append("Normal")
-    else:
-        y_true.append(row['attack_cat'])
+# 1. التوقع دفعة واحدة (استغراق ثوانٍ معدودة)
+y_pred_tier1, y_pred_final = pipeline.predict_batch(test_df)
 
-# 4. حساب دقة الـ Pipeline ككل
-e2e_acc = accuracy_score(y_true, final_preds)
+# 2. تجهيز القيم الحقيقية
+y_true_tier1 = test_df["label"].values
+y_true_final = test_df.apply(
+    lambda row: "Normal" if row["label"] == 0 else str(row["attack_cat"]), 
+    axis=1
+).values
 
-print(f"\n==========================================")
-print(f" END-TO-END PIPELINE ACCURACY : {e2e_acc * 100:.2f}%")
-print(f"==========================================")
+# ==========================================
+# TIER 1 RESULTS
+# ==========================================
+tier1_acc = accuracy_score(y_true_tier1, y_pred_tier1)
 
-# حفظ التقرير والتنفيذ
+tier1_report = (
+    "TIER 1 END-TO-END RESULTS\n"
+    "=========================\n"
+    f"Accuracy: {tier1_acc * 100:.2f}%\n\n"
+    + classification_report(
+        y_true_tier1,
+        y_pred_tier1,
+        target_names=["Normal", "Attack"],
+        zero_division=0
+    )
+)
+
+print("\n" + tier1_report)
+
+# ==========================================
+# FULL TWO-TIER RESULTS
+# ==========================================
+final_acc = accuracy_score(y_true_final, y_pred_final)
+
+final_report = (
+    "FULL TWO-TIER END-TO-END RESULTS\n"
+    "================================\n"
+    f"Accuracy: {final_acc * 100:.2f}%\n\n"
+    + classification_report(
+        y_true_final,
+        y_pred_final,
+        zero_division=0
+    )
+)
+
+print("\n" + final_report)
+
+# ==========================================
+# SAVE RESULTS
+# ==========================================
 os.makedirs("results/metrics", exist_ok=True)
-with open("results/metrics/end_to_end_report.txt", "w") as f:
-    f.write(f"End-to-End Pipeline Overall Accuracy: {e2e_acc * 100:.2f}%\n\n")
-    f.write(classification_report(y_true, final_preds))
+report_file_path = "results/metrics/end_to_end_report.txt"
 
-print("✅ Phase 7 Evaluation Complete. Report saved to results/metrics/end_to_end_report.txt")
+with open(report_file_path, "w") as f:
+    f.write(tier1_report)
+    f.write("\n\n" + "=" * 50 + "\n\n")
+    f.write(final_report)
+
+print("\n✅ Full two-tier End-to-End evaluation completed successfully.")
+print(f"📁 Report saved to {report_file_path}")

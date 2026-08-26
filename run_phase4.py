@@ -20,4 +20,5 @@ if __name__ == "__main__":
     print("==========================================")
     print(f"Final Cleaned Dataset Shape: {clean_df.shape}")
     print("\nUpdated Attack Categories:")
-    print(clean_df['attack_cat'].value_counts())
+    print(clean_df['attack_cat'].value_counts()) 
+    

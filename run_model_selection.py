@@ -1,105 +1,81 @@
 import os
-import time
+import joblib
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OrdinalEncoder
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from src.models import prepare_tier1_data
 
-print("[INFO] Loading cleaned dataset for Model Selection...")
-# البحث عن ملف Parquet المتاح
-dataset_paths = [
-    'data/processed/clean_unsw_nb15.parquet',
-    'data/processed/cleaned_unsw_nb15.parquet',
-    'data/processed/test_set.parquet'
-]
+print("==================================================")
+print("     RUNNING MODEL SELECTION (LEAK-FREE)          ")
+print("==================================================")
 
-data_path = None
-for path in dataset_paths:
-    if os.path.exists(path):
-        data_path = path
-        break
+# 1. تحميل مجموعات البيانات المعزولة
+train_path = "data/processed/train_set.parquet"
+test_path = "data/processed/test_set.parquet"
 
-if not data_path:
-    raise FileNotFoundError("Cleaned dataset not found in data/processed/")
+if not os.path.exists(train_path) or not os.path.exists(test_path):
+    raise FileNotFoundError("🚨 Processed datasets missing! Please run train.py first.")
 
-df = pd.read_parquet(data_path)
+train_df = pd.read_parquet(train_path)
+test_df = pd.read_parquet(test_path)
 
-# إعداد Features و Target
-cat_cols = ['proto', 'service', 'state']
-enc = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)
-df[cat_cols] = enc.fit_transform(df[cat_cols])
+# 2. تحميل الـ Encoder المعتمد في التدريب الرئيسي
+encoder_path = "models/categorical_encoder.joblib"
+if not os.path.exists(encoder_path):
+    raise FileNotFoundError("🚨 Categorical encoder missing! Please run train.py first.")
 
-X = df.drop(columns=['label', 'attack_cat'], errors='ignore')
-y = df['label']
+cat_encoder = joblib.load(encoder_path)
 
-# تقسيم البيانات 80/20
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+# 3. تجهيز الميزات لـ Tier 1
+X_train, y_train = prepare_tier1_data(train_df, cat_encoder)
+X_test, y_test = prepare_tier1_data(test_df, cat_encoder)
 
-# تعريف النماذج المقارنة
+# 4. تعريف الخوارزميات للمقارنة
 models = {
     "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
-    "Decision Tree": DecisionTreeClassifier(random_state=42),
-    "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1),
-    "XGBoost (Proposed)": XGBClassifier(n_estimators=100, learning_rate=0.1, random_state=42, eval_metric='logloss', n_jobs=-1)
+    "Decision Tree": DecisionTreeClassifier(max_depth=10, random_state=42),
+    "Random Forest": RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42, n_jobs=-1),
+    "XGBoost": XGBClassifier(n_estimators=100, learning_rate=0.1, max_depth=6, random_state=42, n_jobs=-1, eval_metric='logloss')
 }
 
 results = []
 
-print("\n==================================================")
-print("          STARTING MODEL SELECTION EVALUATION     ")
-print("==================================================")
-
 for name, model in models.items():
-    start_time = time.time()
+    print(f"[BENCHMARK] Training {name}...")
     model.fit(X_train, y_train)
-    train_time = time.time() - start_time
-    
     y_pred = model.predict(X_test)
-    
-    acc = accuracy_score(y_test, y_pred)
-    prec = precision_score(y_test, y_pred)
-    rec = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
     
     results.append({
         "Model": name,
-        "Accuracy": acc,
-        "Precision": prec,
-        "Recall": rec,
-        "F1-Score": f1,
-        "Training Time (s)": round(train_time, 2)
+        "Accuracy": accuracy_score(y_test, y_pred),
+        "Precision": precision_score(y_test, y_pred, zero_division=0),
+        "Recall": recall_score(y_test, y_pred, zero_division=0),
+        "F1-Score": f1_score(y_test, y_pred, zero_division=0)
     })
-    print(f"[{name}] Acc: {acc:.4f} | F1: {f1:.4f} | Time: {train_time:.2f}s")
 
-# إنشاء DataFrame للنتائج
-results_df = pd.DataFrame(results)
+# 5. حفظ وحرض التقرير والرسم البياني
+results_df = pd.DataFrame(results).sort_values(by="F1-Score", ascending=False)
+print("\n", results_df.to_string(index=False))
 
-# حفظ النتائج في مجلد results/figures
+os.makedirs("results/metrics", exist_ok=True)
 os.makedirs("results/figures", exist_ok=True)
+
+results_df.to_csv("results/metrics/model_selection_comparison.csv", index=False)
 
 # رسم بياني للمقارنة
 plt.figure(figsize=(10, 6))
 sns.barplot(data=results_df, x="Model", y="F1-Score", palette="Blues_d")
-plt.title("Tier 1 Baseline Comparison (F1-Score Evaluation)", fontsize=14, fontweight='bold')
-plt.ylim(0.8, 1.0)
-plt.ylabel("F1-Score")
-plt.xlabel("Classification Models")
+plt.title("Tier 1 Algorithm Selection (F1-Score Comparison)", fontsize=12, fontweight='bold')
+plt.ylim(0, 1.0)
 plt.tight_layout()
-
-chart_path = "results/figures/model_selection_comparison.png"
-plt.savefig(chart_path, dpi=300)
+plt.savefig("results/figures/model_selection_f1.png", dpi=300)
 plt.close()
 
-print("\n==================================================")
-print("             MODEL SELECTION SUMMARY TABLE        ")
-print("==================================================")
-print(results_df.to_string(index=False))
-print(f"\n[SUCCESS] Comparison chart saved to: {chart_path}")
+print("\n✅ Model Selection benchmark complete. Results saved to results/metrics/")

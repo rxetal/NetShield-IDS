@@ -2,70 +2,93 @@ import os
 import joblib
 import pandas as pd
 import numpy as np
+from src.models import transform_categorical_features
 
 class NetShieldPipeline:
-    def __init__(self, tier1_path="models/tier1_xgb.joblib", 
-                 tier2_path="models/tier2_xgb.joblib", 
-                 label_encoder_path="models/label_encoder.joblib",
-                 cat_encoder_path="models/categorical_encoder.joblib"):
+    def __init__(self, models_dir="models"):
+        self.models_dir = models_dir
         
-        self.tier1_model = joblib.load(tier1_path)
-        self.tier2_model = joblib.load(tier2_path)
-        self.label_encoder = joblib.load(label_encoder_path)
-        self.cat_encoder = joblib.load(cat_encoder_path)
-        self.cat_cols = ['proto', 'service', 'state']
+        # تحميل الـ Artifacts المحفوظة
+        self.cat_encoder = joblib.load(os.path.join(models_dir, "categorical_encoder.joblib"))
+        self.tier1_model = joblib.load(os.path.join(models_dir, "tier1_xgb.joblib"))
+        self.tier2_model = joblib.load(os.path.join(models_dir, "tier2_xgb.joblib"))
+        self.label_encoder = joblib.load(os.path.join(models_dir, "label_encoder.joblib"))
 
-    def predict_single(self, sample_df):
-        df_processed = sample_df.copy()
+    def _prepare_features(self, df_raw):
+        """دالة مساعدة لتحويل الخصائص وتأكيد ترتيب الأعمدة طبقاً للنموذج"""
+        # 1. تطبيق الـ Categorical Encoding الموحد
+        df_encoded = transform_categorical_features(df_raw, self.cat_encoder)
         
-        # تحويل البيانات النصية باستخدام القاموس الموحد
-        df_processed[self.cat_cols] = self.cat_encoder.transform(df_processed[self.cat_cols])
-        X = df_processed.drop(columns=['label', 'attack_cat'], errors='ignore')
+        # 2. حذف أعمدة الـ Targets إن وجدت
+        X = df_encoded.drop(columns=['label', 'attack_cat'], errors='ignore')
         
-        tier1_pred = self.tier1_model.predict(X)[0]
-        tier1_prob = self.tier1_model.predict_proba(X)[0][1]
+        # 3. إعادة ترتيب الأعمدة لتطابق ترتيب التدريب الخاص بـ XGBoost
+        expected_features = getattr(self.tier1_model, "feature_names_in_", None)
+        if expected_features is not None:
+            X = X[expected_features]
+            
+        return X
+
+    def predict_single(self, df_raw):
+        """معالجة وتوقع حزمة شبكية واحدة بأسلوب الهرمي (Hierarchical)"""
+        # تجهيز الخصائص
+        X = self._prepare_features(df_raw)
         
-        risk_score = round(float(tier1_prob) * 100, 2)
+        # 1. Tier 1 Prediction
+        t1_pred = int(self.tier1_model.predict(X)[0])
+        t1_proba = float(self.tier1_model.predict_proba(X)[0][1])
         
-        if tier1_pred == 0:
+        if t1_pred == 0:
             return {
-                "is_attack": False,
                 "tier1_label": "Normal",
-                "attack_prob": float(tier1_prob),
                 "attack_type": "Normal",
-                "risk_score": risk_score,
+                "attack_prob": t1_proba,
+                "risk_score": round(t1_proba * 20, 2), # سكور منخفض للحركات الطبيعية
                 "severity": "Low"
             }
         else:
-            tier2_pred_idx = self.tier2_model.predict(X)[0]
-            attack_name = self.label_encoder.inverse_transform([tier2_pred_idx])[0]
-            severity = "Critical" if risk_score > 85 else ("High" if risk_score > 60 else "Medium")
+            # 2. Tier 2 Prediction (في حالة كشف هجوم)
+            t2_pred_idx = int(self.tier2_model.predict(X)[0])
+            t2_probas = self.tier2_model.predict_proba(X)[0]
+            
+            attack_type = str(self.label_encoder.inverse_transform([t2_pred_idx])[0])
+            max_t2_prob = float(np.max(t2_probas))
+            
+            # حساب الـ Risk Score و الدرجة
+            risk_score = round(50 + (max_t2_prob * 50), 2)
+            severity = "Critical" if risk_score > 85 else ("High" if risk_score > 70 else "Medium")
             
             return {
-                "is_attack": True,
                 "tier1_label": "Attack",
-                "attack_prob": float(tier1_prob),
-                "attack_type": attack_name,
+                "attack_type": attack_type,
+                "attack_prob": max_t2_prob,
                 "risk_score": risk_score,
                 "severity": severity
             }
 
-    def predict(self, sample_df):
-        df_processed = sample_df.copy()
+    def predict_batch(self, df_raw):
+        """توقع كل البيانات دفعة واحدة بكتل موجهة (Fast Vectorized Inference)"""
+        # تجهيز الخصائص لكل البيانات
+        X = self._prepare_features(df_raw)
         
-        df_processed[self.cat_cols] = self.cat_encoder.transform(df_processed[self.cat_cols])
-        X = df_processed.drop(columns=['label', 'attack_cat'], errors='ignore')
+        # 1. Tier 1 Predictions دفعة واحدة
+        t1_predictions = self.tier1_model.predict(X)
+        y_pred_tier1 = np.asarray(t1_predictions, dtype=int)
         
-        t1_preds = self.tier1_model.predict(X)
-        t1_probas = self.tier1_model.predict_proba(X)[:, 1]
+        # 2. تهيئة مصفوفة التوقعات النهائية بقيم افتراضية "Normal"
+        y_pred_final = np.full(len(X), "Normal", dtype=object)
         
-        final_preds = []
-        for i, pred in enumerate(t1_preds):
-            if pred == 0:
-                final_preds.append("Normal")
-            else:
-                tier2_pred_idx = self.tier2_model.predict(X.iloc[[i]])[0]
-                attack_name = self.label_encoder.inverse_transform([tier2_pred_idx])[0]
-                final_preds.append(attack_name)
-                
-        return final_preds, t1_preds, t1_probas
+        # 3. تحديد أماكن العينات التي تم تصنيفها كـ Attack
+        attack_indices = np.where(y_pred_tier1 == 1)[0]
+        
+        # 4. تشغيل Tier 2 فقط على العينات المسجلة كـ Attack
+        if len(attack_indices) > 0:
+            X_attack = X.iloc[attack_indices]
+            t2_predictions = self.tier2_model.predict(X_attack)
+            t2_predictions = np.asarray(t2_predictions, dtype=int)
+            
+            # تحويل الأرقام إلى أسماء الهجمات النصية
+            attack_types = self.label_encoder.inverse_transform(t2_predictions)
+            y_pred_final[attack_indices] = attack_types
+            
+        return y_pred_tier1, y_pred_final
