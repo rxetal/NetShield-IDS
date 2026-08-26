@@ -1,80 +1,56 @@
 import os
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import joblib
-
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-print("[INFO] Loading cleaned dataset for Unsupervised Learning...")
-dataset_paths = [
-    'data/processed/clean_unsw_nb15.parquet',
-    'data/processed/cleaned_unsw_nb15.parquet',
-    'data/processed/test_set.parquet'
-]
+print("==================================================")
+print("     UNSUPERVISED ANOMALY CLUSTERING PIPELINE    ")
+print("==================================================")
 
-data_path = next((p for p in dataset_paths if os.path.exists(p)), None)
-if not data_path:
-    raise FileNotFoundError("Cleaned dataset missing!")
+train_path = "data/processed/train_set.parquet"
+if not os.path.exists(train_path):
+    train_path = "data/processed/clean_unsw_nb15.parquet"
 
-df = pd.read_parquet(data_path)
+df_train = pd.read_parquet(train_path)
 
-# تحويل الأعمدة النصية
 cat_cols = ['proto', 'service', 'state']
-enc = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)
-df[cat_cols] = enc.fit_transform(df[cat_cols])
+encoder = joblib.load("models/categorical_encoder.joblib")
 
-X = df.drop(columns=['label', 'attack_cat'], errors='ignore')
-y = df['label'] if 'label' in df.columns else None
+df_encoded = df_train.copy()
+df_encoded[cat_cols] = encoder.transform(df_encoded[cat_cols])
+X = df_encoded.drop(columns=['label', 'attack_cat'], errors='ignore')
 
-# 1. Scaling البيانات (ضروري جداً للـ PCA والـ K-Means)
+# 1. Fit & Save StandardScaler
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# 2. تطبيق PCA لتقليل الأبعاد لـ 2 Components
-print("[INFO] Applying PCA (Dimensionality Reduction)...")
+# 2. Fit & Save PCA
 pca = PCA(n_components=2, random_state=42)
 X_pca = pca.fit_transform(X_scaled)
-print(f"[INFO] PCA Explained Variance Ratio: {pca.explained_variance_ratio_}")
 
-# 3. تطبيق K-Means Clustering (k=2: Normal Cluster vs Anomaly Cluster)
-print("[INFO] Fitting K-Means Clustering model...")
+# 3. Fit & Save KMeans
 kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
-clusters = kmeans.fit_predict(X_scaled)
+clusters = kmeans.fit_predict(X_pca)
 
-# حفظ نماذج الـ Unsupervised
 os.makedirs("models", exist_ok=True)
-joblib.dump(scaler, "models/scaler.joblib")
-joblib.dump(pca, "models/pca_model.joblib")
-joblib.dump(kmeans, "models/kmeans_model.joblib")
+joblib.dump(scaler, "models/unsupervised_scaler.joblib")
+joblib.dump(pca, "models/unsupervised_pca.joblib")
+joblib.dump(kmeans, "models/unsupervised_kmeans.joblib")
 
-# 4. رسم النتائج بيانيًا
+# 4. Visualization
 os.makedirs("results/figures", exist_ok=True)
-
-plt.figure(figsize=(12, 5))
-
-# Plot 1: K-Means Clusters
-plt.subplot(1, 2, 1)
-plt.scatter(X_pca[:, 0], X_pca[:, 1], c=clusters, cmap='viridis', alpha=0.5, s=10)
-plt.title("K-Means Clustering (PCA Reduced)", fontweight='bold')
-plt.xlabel("PCA Component 1")
-plt.ylabel("PCA Component 2")
-
-# Plot 2: Actual Ground Truth (لو متوفرة)
-if y is not None:
-    plt.subplot(1, 2, 2)
-    plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, cmap='coolwarm', alpha=0.5, s=10)
-    plt.title("Actual Labels (0: Normal, 1: Attack)", fontweight='bold')
-    plt.xlabel("PCA Component 1")
-    plt.ylabel("PCA Component 2")
-
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=clusters, palette='Set1', alpha=0.5)
+plt.title("Unsupervised Anomaly Clustering (PCA + K-Means)", fontsize=12, fontweight='bold')
+plt.xlabel("Principal Component 1")
+plt.ylabel("Principal Component 2")
 plt.tight_layout()
-chart_path = "results/figures/unsupervised_clusters.png"
-plt.savefig(chart_path, dpi=300)
+plt.savefig("results/figures/unsupervised_clusters.png", dpi=300)
 plt.close()
 
-print(f"[SUCCESS] Unsupervised models saved to 'models/' and plot saved to: {chart_path}")
+print("✅ Unsupervised Pipeline Executed & Artifacts Saved Successfully.")

@@ -1,24 +1,24 @@
 ==========================================
 TIER 2 MULTICLASS CLASSIFICATION METRICS
 ==========================================
-Overall Accuracy : 0.8104 (81.04%)
-Macro F1-Score   : 0.6035
-Weighted F1-Score: 0.8000
+Overall Accuracy : 0.8076 (80.76%)
+Macro F1-Score   : 0.5921
+Weighted F1-Score: 0.7966
 ==========================================
 
 
                 precision    recall  f1-score   support
 
-      Analysis       0.31      0.19      0.23       437
-      Backdoor       0.24      0.18      0.20       397
-           DoS       0.42      0.21      0.28      1133
-      Exploits       0.83      0.86      0.84      5520
-       Fuzzers       0.73      0.94      0.82      4359
-       Generic       0.97      0.89      0.93      5076
-Reconnaissance       0.89      0.80      0.85      2671
-     Shellcode       0.65      0.69      0.67       302
-         Worms       0.66      0.56      0.60        34
+      Analysis       0.56      0.16      0.24       481
+      Backdoor       0.15      0.24      0.18       361
+           DoS       0.57      0.18      0.28      1148
+      Exploits       0.82      0.87      0.84      5469
+       Fuzzers       0.73      0.94      0.82      4335
+       Generic       0.97      0.89      0.93      5062
+Reconnaissance       0.88      0.79      0.83      2701
+     Shellcode       0.61      0.68      0.64       290
+         Worms       0.62      0.50      0.55        32
 
-      accuracy                           0.81     19929
-     macro avg       0.63      0.59      0.60     19929
-  weighted avg       0.80      0.81      0.80     19929
+      accuracy                           0.81     19879
+     macro avg       0.66      0.58      0.59     19879
+  weighted avg       0.81      0.81      0.80     19879

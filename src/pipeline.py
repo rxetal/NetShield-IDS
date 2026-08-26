@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 
 class NetShieldPipeline:
-    def __init__(self, tier1_path="models/tier1_xgboost.joblib", 
-                 tier2_path="models/tier2_xgboost.joblib", 
+    def __init__(self, tier1_path="models/tier1_xgb.joblib", 
+                 tier2_path="models/tier2_xgb.joblib", 
                  label_encoder_path="models/label_encoder.joblib",
                  cat_encoder_path="models/categorical_encoder.joblib"):
         
@@ -18,14 +18,13 @@ class NetShieldPipeline:
     def predict_single(self, sample_df):
         df_processed = sample_df.copy()
         
-        # تحويل البيانات باستخدام القاموس الموحد
+        # تحويل البيانات النصية باستخدام القاموس الموحد
         df_processed[self.cat_cols] = self.cat_encoder.transform(df_processed[self.cat_cols])
         X = df_processed.drop(columns=['label', 'attack_cat'], errors='ignore')
         
         tier1_pred = self.tier1_model.predict(X)[0]
         tier1_prob = self.tier1_model.predict_proba(X)[0][1]
         
-        # حساب نسبة الخطورة
         risk_score = round(float(tier1_prob) * 100, 2)
         
         if tier1_pred == 0:
@@ -54,15 +53,12 @@ class NetShieldPipeline:
     def predict(self, sample_df):
         df_processed = sample_df.copy()
         
-        # تحويل الأعمدة النصية باستخدام القاموس
         df_processed[self.cat_cols] = self.cat_encoder.transform(df_processed[self.cat_cols])
         X = df_processed.drop(columns=['label', 'attack_cat'], errors='ignore')
         
-        # التوقع من Tier 1
         t1_preds = self.tier1_model.predict(X)
         t1_probas = self.tier1_model.predict_proba(X)[:, 1]
         
-        # التوقع النهائي (Tier 2 لو فيه هجوم)
         final_preds = []
         for i, pred in enumerate(t1_preds):
             if pred == 0:

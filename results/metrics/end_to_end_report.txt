@@ -1,18 +1,18 @@
-Hierarchical System Overall Accuracy: 0.9789
+End-to-End Pipeline Overall Accuracy: 98.33%
 
                 precision    recall  f1-score   support
 
-      Analysis       0.19      0.19      0.19       431
-      Backdoor       0.33      0.19      0.24       397
-           DoS       0.41      0.25      0.31      1086
-      Exploits       0.78      0.87      0.82      5565
-       Fuzzers       0.40      0.84      0.54      4374
-       Generic       0.97      0.90      0.94      5008
-        Normal       1.00      0.99      0.99    391997
-Reconnaissance       0.89      0.80      0.84      2711
-     Shellcode       0.53      0.25      0.34       285
-         Worms       0.79      0.76      0.77        29
+      Analysis       0.20      0.03      0.05       481
+      Backdoor       0.15      0.24      0.18       361
+           DoS       0.57      0.18      0.27      1148
+      Exploits       0.79      0.85      0.82      5469
+       Fuzzers       0.50      0.57      0.53      4335
+       Generic       0.97      0.89      0.93      5062
+        Normal       1.00      1.00      1.00    391631
+Reconnaissance       0.88      0.79      0.83      2701
+     Shellcode       0.56      0.67      0.61       290
+         Worms       0.62      0.50      0.55        32
 
-      accuracy                           0.98    411883
-     macro avg       0.63      0.60      0.60    411883
-  weighted avg       0.98      0.98      0.98    411883
+      accuracy                           0.98    411510
+     macro avg       0.62      0.57      0.58    411510
+  weighted avg       0.98      0.98      0.98    411510
